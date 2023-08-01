@@ -21,24 +21,26 @@ library(openxlsx)
 library(stringr)
 library(reshape2)
 library(clusterProfiler)
+library(msigdbr)
 
-source("./functions/first_accession.R")
+source("../functions/first_accession.R")
 #----
 
 # A Top-Table Type object should had been already created
 # Also a meta-data object
 
 ### Get the data----
-data <- openxlsx::read.xlsx("./raw_data/Clean_Top_Table_k6_ANOVA.xlsx", sheet = 1)
-meta_data <- read.table("./raw_data/meta_data.tsv", sep = "\t", dec = ".", header = T)
-meta_data$pacient_group <- as.character(meta_data$pacient_group)
-prot_cluster <- read.table("./raw_data/clust_prot_k6_ANOVA.tsv",header = T, sep = "\t", dec = ".")
+data <- openxlsx::read.xlsx("../raw_data/Clean_Top_Table_k6_ANOVA.xlsx", sheet = 1)
 
+meta_data <- read.table("../raw_data/meta_data.tsv", sep = "\t", dec = ".", header = T)
+meta_data$pacient_group <- as.character(meta_data$pacient_group)
+
+  
 # Create a basic file system
 wd <- getwd()
-dir.create(file.path(wd,"./raw_data"))
-dir.create(file.path(wd,"./results"))
-dir.create(file.path(wd,"./plots"))
+dir.create(file.path(wd,"../raw_data"))
+dir.create(file.path(wd,"../results"))
+dir.create(file.path(wd,"../plots"))
 #----
 
 
@@ -79,11 +81,19 @@ data$Accession_1 <- good_names
 data <- data %>%
   relocate(Accession_1, .after = Accession)
 
-# Visualize the generation of the new protein groups
-head(data[,c("Accession","Accession_1")])
+# Same for gene_names 
+g_acs <- strsplit(data$Gene.names, "\\;")
+good_names <- first_accession(g_acs)
+data$Gene.names_1 <- good_names
+data <- data %>%
+  relocate(Gene.names_1, .after = Gene.names)
 
 # Remove all genes with some NA
 data <- na.omit(data)
+
+# Retrieve the annotation
+annoation_original <- data[,c(1:5)]
+annoation <- data[,c(1,4)] 
 #----
 
 ### Get differentially expressed genes, for 1 vs 1 or more groups---- 
@@ -96,41 +106,92 @@ expression_matrix_long <- tidyr::pivot_longer(expression_matrix, cols = c(1:56),
                                               names_to = "sample", values_to = "intensity")
 
 expression_matrix_long <- merge(x = expression_matrix_long, y = meta_data, by = "sample")
-expression_matrix_long <- merge(x = expression_matrix_long, y = prot_cluster, by = "Accession")
 
 # Calculate the mean intensity for each group
 ## for pacient groups
-##expression_matrix_long2 <- expression_matrix_long %>% 
-##  group_by(pacient_group, Accession) %>% 
-##  summarise(mean_intensity=mean(intensity))
+expression_matrix_zscore <- expression_matrix_long %>% 
+  group_by(pacient_group, Accession) %>% 
+  summarise(mean_intensity=mean(intensity))
 
 ## for protein clusters
-expression_matrix_long2 <- expression_matrix_long %>% 
-  group_by(Accession) %>% 
-  summarise(mean_intensity=mean(intensity))
+##expression_matrix_zscore <- expression_matrix_long %>% 
+##  group_by(Accession) %>% 
+##  summarise(mean_intensity=mean(intensity))
 
 # Calculate z-score for each gene
 ## for pacient groups
-##expression_matrix_long3 <- expression_matrix_long2 %>% 
-##  group_by(Accession) %>% 
-##  mutate(zscore = scale(mean_intensity, center = TRUE, scale = TRUE)[,1])
+expression_matrix_zscore <- expression_matrix_zscore %>% 
+  group_by(Accession) %>% 
+  mutate(zscore = scale(mean_intensity, center = TRUE, scale = TRUE)[,1])
 
 ## for protein clusters
-expression_matrix_long3 <- expression_matrix_long2 %>% 
-  mutate(zscore = scale(mean_intensity, center = TRUE, scale = TRUE)[,1])
-expression_matrix_long3 <- merge(x = expression_matrix_long3, y = prot_cluster, by = "Accession")
+##expression_matrix_zscore <- expression_matrix_zscore %>% 
+##  mutate(zscore = scale(mean_intensity, center = TRUE, scale = TRUE)[,1])
+##expression_matrix_zscore <- merge(x = expression_matrix_zscore, y = prot_cluster, by = "Accession")
 
 ## check-point for pacient groups
-##ee <- expression_matrix_long3$mean_intensity[expression_matrix_long3$Accession == "A0FGR8" & expression_matrix_long3$cluster == "3"]
-##esd <- sd(expression_matrix_long3$mean_intensity[expression_matrix_long3$Accession == "A0FGR8"])
-##eman <- mean(expression_matrix_long3$mean_intensity[expression_matrix_long3$Accession == "A0FGR8"])
+ee <- expression_matrix_zscore$mean_intensity[expression_matrix_zscore$Accession == "A0FGR8" & expression_matrix_zscore$pacient_group == "3"]
+esd <- sd(expression_matrix_zscore$mean_intensity[expression_matrix_zscore$Accession == "A0FGR8"])
+eman <- mean(expression_matrix_zscore$mean_intensity[expression_matrix_zscore$Accession == "A0FGR8"])
+(ee - eman)/esd
 
 ## check-point for protein clusters
-##ee <- expression_matrix_long3$mean_intensity[expression_matrix_long3$Accession == "A0FGR8"]
-##esd <- sd(expression_matrix_long3$mean_intensity)
-##eman <- mean(expression_matrix_long3$mean_intensity)
+##ee <- expression_matrix_zscore$mean_intensity[expression_matrix_zscore$Accession == "A0FGR8"]
+##esd <- sd(expression_matrix_zscore$mean_intensity)
+##eman <- mean(expression_matrix_zscore$mean_intensity)
+##(ee - eman)/esd
+
+## annotate if z-score is up or down
+expression_matrix_zscore <- expression_matrix_zscore %>% 
+  mutate(up_or_down = (ifelse(
+    zscore > 0, "up","down"
+  )))
+
+# Get gene names
+expression_matrix_zscore <- merge(expression_matrix_zscore, annoation, by.x = "Accession", by.y = "Accession")
+
+# Split the data by clustering codification <- ADD IN LINE 141
+zscore_pac1 <- expression_matrix_zscore[expression_matrix_zscore$pacient_group == "1",]
+zscore_pac2 <- expression_matrix_zscore[expression_matrix_zscore$pacient_group == "2",]
+zscore_pac3 <- expression_matrix_zscore[expression_matrix_zscore$pacient_group == "3",]
+zscore_pac4 <- expression_matrix_zscore[expression_matrix_zscore$pacient_group == "4",]
+
+#### ADD A WAY TO FILTER OUT GENES !!!!!! <- SPEAK THIS TOMORROW !!!!
+
+# Create a named vector and order it by decreasing order
+z_score_value_pac1 <- zscore_pac1$zscore
+names(z_score_value_pac1) <- zscore_pac1$Gene.names_1
+z_score_value_pac1 <- sort(z_score_value_pac1, decreasing = TRUE)
+
+z_score_value_pac2 <- zscore_pac2$zscore
+names(z_score_value_pac2) <- zscore_pac2$Gene.names_1
+z_score_value_pac2 <- sort(z_score_value_pac2, decreasing = TRUE)
+
+z_score_value_pac3 <- zscore_pac3$zscore
+names(z_score_value_pac3) <- zscore_pac3$Gene.names_1
+z_score_value_pac3 <- sort(z_score_value_pac3, decreasing = TRUE)
+
+z_score_value_pac4 <- zscore_pac4$zscore
+names(z_score_value_pac4) <- zscore_pac4$Gene.names_1
+z_score_value_pac4 <- sort(z_score_value_pac4, decreasing = TRUE)
 #----
 
 
+#### GSEA analysis----
+mm_hallmark_sets <- msigdbr(species = "Homo sapiens")
 
-
+gsea_results <- GSEA(
+  geneList = z_score_value_pac1, # Ordered ranked gene list
+  minGSSize = 25, # Minimum gene set size
+  maxGSSize = 500, # Maximum gene set set
+  pvalueCutoff = 0.05, # p-value cutoff
+  eps = 0, # Boundary for calculating the p value
+  seed = TRUE, # Set seed to make results reproducible
+  pAdjustMethod = "BH", # Benjamini-Hochberg correction
+  TERM2GENE = dplyr::select(
+    mm_hallmark_sets,
+    gs_name,
+    gene_symbol
+  )
+)
+#----
