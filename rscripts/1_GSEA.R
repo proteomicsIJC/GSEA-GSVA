@@ -178,10 +178,10 @@ z_score_value_pac4 <- sort(z_score_value_pac4, decreasing = TRUE)
 
 
 #### GSEA analysis----
-mm_hallmark_sets <- msigdbr(species = "Homo sapiens")
+HS_hallmark_sets <- msigdbr(species = "Homo sapiens", category = "H")
 
 gsea_results <- GSEA(
-  geneList = z_score_value_pac1, # Ordered ranked gene list
+  geneList = z_score_value_pac2, # Ordered ranked gene list
   minGSSize = 25, # Minimum gene set size
   maxGSSize = 500, # Maximum gene set set
   pvalueCutoff = 0.05, # p-value cutoff
