@@ -180,6 +180,8 @@ z_score_value_pac4 <- sort(z_score_value_pac4, decreasing = TRUE)
 #### GSEA analysis----
 HS_hallmark_sets <- msigdbr(species = "Homo sapiens", category = "H")
 
+#### ADD GO AND REACTOME !!!!! 
+
 gsea_results <- GSEA(
   geneList = z_score_value_pac2, # Ordered ranked gene list
   minGSSize = 25, # Minimum gene set size
@@ -189,7 +191,7 @@ gsea_results <- GSEA(
   seed = TRUE, # Set seed to make results reproducible
   pAdjustMethod = "BH", # Benjamini-Hochberg correction
   TERM2GENE = dplyr::select(
-    mm_hallmark_sets,
+    HS_hallmark_sets,
     gs_name,
     gene_symbol
   )
