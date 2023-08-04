@@ -246,32 +246,25 @@ rnk_g4<- sort(rnk_g4, decreasing = TRUE)
 
 
 # Gene sets
+## http://baderlab.org/GeneSets
 pathways <- gmtPathways(gmt.file = "../raw_data/Human_GOBP_AllPathways_no_GO_iea_July_03_2023_symbol.gmt")
 
 # Gesea
 fgseaRes1 <- fgsea(pathways = pathways, 
                    stats    = rnk_g1,
                    minSize  = 30,
-                   maxSize  = 500)
+                   maxSize  = 500, gseaParam = 0.5)
 fgseaRes2 <- fgsea(pathways = pathways, 
                    stats    = rnk_g2,
                    minSize  = 30,
-                   maxSize  = 500)
+                   maxSize  = 500, gseaParam = 0.5)
 fgseaRes3 <- fgsea(pathways = pathways, 
                    stats    = rnk_g3,
                    minSize  = 30,
-                   maxSize  = 500)
+                   maxSize  = 500, gseaParam = 0.5)
 
 fgseaRes4 <- fgsea(pathways = pathways, 
                   stats    = rnk_g4,
                   minSize  = 30,
-                  maxSize  = 500)
-collapsedPathways <- collapsePathways(fgseaRes[order(pval)][padj < 0.05], 
-                                      pathways, rnk_g2)
-
-mainPathways <- fgseaRes[pathway %in% collapsedPathways$mainPathways][
-  order(-NES), pathway]
-
-plotGseaTable(pathways[mainPathways], rnk_g2, fgseaRes, 
-              gseaParam = 0.5)
+                  maxSize  = 500, gseaParam = 0.5)
 #----
