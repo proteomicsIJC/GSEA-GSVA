@@ -269,6 +269,9 @@ plotEnrichment(pathways[["COMPLEMENT CASCADE%REACTOME%R-HSA-166658.4"]],
 # This is an up-regulated path
 plotEnrichment(pathways[["SIGNALING BY RHO GTPASES, MIRO GTPASES AND RHOBTB3%REACTOME DATABASE ID RELEASE 84%9716542"]],
                rnk_g1) + labs(title="Signaling by rho GTP-ases, MIRO GTPases and RHO RHOBTB")
+
+
+### https://bioconductor.statistik.tu-dortmund.de/packages/3.8/bioc/vignettes/enrichplot/inst/doc/enrichplot.html
 #----
 
 
