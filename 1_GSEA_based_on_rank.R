@@ -25,7 +25,7 @@ library(msigdbr)
 library(fgsea)
 library(org.Hs.eg.db)
 
-source("../functions/first_accession.R")
+source("./functions/first_accession.R")
 #----
 
 # A Top-Table Type object should had been already created
