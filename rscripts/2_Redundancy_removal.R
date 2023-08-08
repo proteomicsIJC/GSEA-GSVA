@@ -17,55 +17,28 @@ source("./1_GSEA_based_on_rank.R")
 ### GSEA required data----
 # ranked lists are already annotated
 head(rnk_g1)
-head(rnk_g2)
-head(rnk_g3)
-head(rnk_g4)
 
 # .gmt file aready imported
 head(names(pathways))
 #----
 
 ### Collapse GSEA results----
-# gsea1
 collapsedPathways1 <- collapsePathways(fgseaRes1[order(pval)][padj < 0.05], 
                                       pathways, rnk_g1)
 mainPathways1 <- fgseaRes1[pathway %in% collapsedPathways1$mainPathways][
   order(-NES), pathway]
-# gsea2
-collapsedPathways2 <- collapsePathways(fgseaRes2[order(pval)][padj < 0.05], 
-                                       pathways, rnk_g2)
-mainPathways2 <- fgseaRes2[pathway %in% collapsedPathways2$mainPathways][
-  order(-NES), pathway]
-
-# gsea3
-collapsedPathways3 <- collapsePathways(fgseaRes3[order(pval)][padj < 0.05], 
-                                       pathways, rnk_g3)
-mainPathways3 <- fgseaRes3[pathway %in% collapsedPathways3$mainPathways][
-  order(-NES), pathway]
-
-# gsea4
-collapsedPathways4 <- collapsePathways(fgseaRes4[order(pval)][padj < 0.05], 
-                                       pathways, rnk_g4)
-mainPathways4 <- fgseaRes4[pathway %in% collapsedPathways4$mainPathways][
-  order(-NES), pathway]
-##plotGseaTable(pathways[mainPathways4], rnk_g4, fgseaRes4, 
-##              gseaParam = 1)
+plotGseaTable(pathways[mainPathways1], rnk_g4, fgseaRes4, 
+              gseaParam = 1)
 #----
 
 
 ### Plotting the results (nicely)----
 # Get the data to plot
 mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
-mainPathways2 <- fgseaRes2[fgseaRes2$pathway %in% mainPathways2][order(-NES)]
-mainPathways3 <- fgseaRes3[fgseaRes3$pathway %in% mainPathways3][order(-NES)]
-mainPathways4 <- fgseaRes4[fgseaRes4$pathway %in% mainPathways4][order(-NES)]
 
 # Clean path names when plotting 
 # save all pathway names
 mainPathways1$old_path <- mainPathways1$pathway
-mainPathways2$old_path <- mainPathways2$pathway
-mainPathways3$old_path <- mainPathways3$pathway
-mainPathways4$old_path <- mainPathways4$pathway
 
 # read the names and add more parsing rules as new "problems or patterns could occour"
 mainPathways1 <- mainPathways1 %>% 
@@ -78,34 +51,8 @@ mainPathways1 <- mainPathways1 %>%
 mainPathways1 <- mainPathways1[order(mainPathways1$pathway),]
 mainPathways1 <- mainPathways1[!duplicated(mainPathways1$pathway),]
 
-mainPathways2 <- mainPathways2 %>% 
-  mutate(pathway = gsub("%.*%","",pathway)) %>% 
-  mutate(pathway = gsub("GO\\:","",pathway)) %>% 
-  mutate(pathway = gsub("[0-9]{5,7}$","",pathway)) %>% 
-  mutate(pathway = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",pathway)) %>% 
-  mutate(pathway = gsub("HALLMARK\\_","",pathway)) %>% 
-  mutate(pathway = gsub("\\_"," ",pathway))
-
-
-mainPathways3 <- mainPathways3 %>% 
-  mutate(pathway = gsub("%.*%","",pathway)) %>% 
-  mutate(pathway = gsub("GO\\:","",pathway)) %>% 
-  mutate(pathway = gsub("[0-9]{5,7}$","",pathway)) %>% 
-  mutate(pathway = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",pathway)) %>% 
-  mutate(pathway = gsub("HALLMARK\\_","",pathway)) %>% 
-  mutate(pathway = gsub("\\_"," ",pathway))
-
-
-mainPathways4 <- mainPathways4 %>% 
-  mutate(pathway = gsub("%.*%","",pathway)) %>% 
-  mutate(pathway = gsub("GO\\:","",pathway)) %>% 
-  mutate(pathway = gsub("[0-9]{5,7}$","",pathway)) %>% 
-  mutate(pathway = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",pathway)) %>% 
-  mutate(pathway = gsub("HALLMARK\\_","",pathway)) %>% 
-  mutate(pathway = gsub("\\_"," ",pathway))
-
 ## NES values
-gsea_hist <- ggplot(mainPathways1)+
+nessy <- ggplot(mainPathways1)+
   geom_col(aes(x = reorder(pathway,NES), y = NES, fill = NES < 0))+
   geom_line(aes(group=1, x = reorder(pathway,NES), y = size/100), col = "darkgreen")+
   theme_classic()+
@@ -114,42 +61,10 @@ gsea_hist <- ggplot(mainPathways1)+
   labs(title = "Enriched pathways", x = "Pathway")+
   scale_fill_manual(values = c("#0077B6","#FF0800"))+
   coord_flip()
-gsea_hist
+nessy
 
-gsea_hist <- ggplot(mainPathways2)+
-  geom_col(aes(x = reorder(pathway,NES), y = NES, fill = NES < 0))+
-  geom_line(aes(group=1, x = reorder(pathway,NES), y = size/100), col = "darkgreen")+
-  theme_classic()+
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "#D9DDDC"))+
-  labs(title = "Enriched pathways", x = "Pathway")+
-  scale_fill_manual(values = c("#0077B6","#FF0800"))+
-  coord_flip()
-gsea_hist
-
-gsea_hist <- ggplot(mainPathways3)+
-  geom_col(aes(x = reorder(pathway,NES), y = NES, fill = NES < 0))+
-  geom_line(aes(group=1, x = reorder(pathway,NES), y = size/100), col = "darkgreen")+
-  theme_classic()+
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "#D9DDDC"))+
-  labs(title = "Enriched pathways", x = "Pathway")+
-  scale_fill_manual(values = c("#0077B6","#FF0800"))+
-  coord_flip()
-gsea_hist
-
-gsea_hist <- ggplot(mainPathways4)+
-  geom_col(aes(x = reorder(pathway,NES), y = NES, fill = NES < 0))+
-  geom_line(aes(group=1, x = reorder(pathway,NES), y = size/100), col = "darkgreen")+
-  theme_classic()+
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "#D9DDDC"))+
-  labs(title = "Enriched pathways", x = "Pathway")+
-  scale_fill_manual(values = c("#0077B6","#FF0800"))+
-  coord_flip()
-gsea_hist
-
-## DOTPLOTS
+## Dotplot follow this when more than a group is being studied, the example can handle 4 gorups but mor
+# can be added
 # Create the data frame
 names_gseas <- c("Group 1","Group 2","Group 3","Group 4")
 
@@ -218,9 +133,6 @@ ggplot(gseas_to_dot)+
 
 ## Letter soup
 gseea1 <- gseas_to_dot[gseas_to_dot$group == "Group 1",]
-gseea2 <- gseas_to_dot[gseas_to_dot$group == "Group 2",]
-gseea3 <- gseas_to_dot[gseas_to_dot$group == "Group 3",]
-gseea4 <- gseas_to_dot[gseas_to_dot$group == "Group 4",]
 
 soup1 <- as.data.frame(collapsedPathways1$parentPathways)
 soup1$child <- rownames(soup1)
@@ -269,14 +181,4 @@ plotEnrichment(pathways[["COMPLEMENT CASCADE%REACTOME%R-HSA-166658.4"]],
 # This is an up-regulated path
 plotEnrichment(pathways[["SIGNALING BY RHO GTPASES, MIRO GTPASES AND RHOBTB3%REACTOME DATABASE ID RELEASE 84%9716542"]],
                rnk_g1) + labs(title="Signaling by rho GTP-ases, MIRO GTPases and RHO RHOBTB")
-
-
-### https://bioconductor.statistik.tu-dortmund.de/packages/3.8/bioc/vignettes/enrichplot/inst/doc/enrichplot.html
 #----
-
-
-
-
-
-
-
