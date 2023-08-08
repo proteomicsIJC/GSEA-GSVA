@@ -4,6 +4,8 @@
 /raw_data/**
 /results
 /results/**
+/ignore_me
+/ignore_me/**
 ./Rhistory
 /**.html
 /TMT_PEAKS_Workflow_user.RMD
