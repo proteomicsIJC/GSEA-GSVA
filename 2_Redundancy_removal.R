@@ -11,7 +11,7 @@ library(treemap)
 library(plotly)
 setwd(dirname(getActiveDocumentContext()$path))
 
-source("./1_GSEA_based_on_rank.R")
+### RUN FIRST 1_GSEA_based_on_rank_script !!!
 #----
 
 ### GSEA required data----

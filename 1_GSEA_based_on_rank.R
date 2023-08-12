@@ -29,13 +29,8 @@ source("./functions/first_accession.R")
 #----
 
 # A Top-Table Type object should had been already created
-# Also a meta-data object
-
 ### Get the data----
 g1_vs_rest <- openxlsx::read.xlsx("../raw_data/TT_up_and_down_1_vs_rest.xlsx", sheet = 1)
-
-meta_data <- read.table("../raw_data/meta_data.tsv", sep = "\t", dec = ".", header = T)
-meta_data$pacient_group <- as.character(meta_data$pacient_group)
 
 # Create a basic file system
 wd <- getwd()
