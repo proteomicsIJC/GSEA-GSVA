@@ -85,21 +85,9 @@ g1_vs_rest$Gene.names_1 <- good_names_1
 g1_vs_rest <- g1_vs_rest %>%
   relocate(Gene.names_1, .after = Gene.names)
 
-# Remove all genes with some NA
-g1_vs_rest <- na.omit(g1_vs_rest)
-
-# Transform UNIPROT IDs to entrezID
-organism <- org.Hs.eg.db
-my.symbols1 <- g1_vs_rest$Accession_1
-g1_annot <- AnnotationDbi::select(organism, 
-                                  keys = my.symbols1,
-                                  columns = c("ENTREZID", "UNIPROT"),
-                                  keytype = "UNIPROT")
-
-g1_vs_rest <- merge(g1_vs_rest,g1_annot, by.x = "Accession_1", by.y = "UNIPROT")
+#### MAYBE ADD Uniprotws to complete the annotation in case it is necessayry !!!!
 
 # Remove duplicated Gene_names
-# The same should be done in case we wanted (or had to work) with ENTREZIDs
 g1_vs_rest <- g1_vs_rest[order(g1_vs_rest$Gene.names_1),]
 g1_vs_rest <- g1_vs_rest[!duplicated(g1_vs_rest$Gene.names_1),]
 #----
