@@ -30,7 +30,7 @@ source("./functions/first_accession.R")
 
 # A Top-Table Type object should had been already created
 ### Get the data----
-g1_vs_rest <- openxlsx::read.xlsx("../raw_data/TT_up_and_down_1_vs_rest.xlsx", sheet = 1)
+g1_vs_rest <- openxlsx::read.xlsx("./raw_data/TT_up_and_down_1_vs_rest.xlsx", sheet = 1)
 
 # Create a basic file system
 wd <- getwd()
@@ -87,10 +87,11 @@ g1_vs_rest <- g1_vs_rest %>%
 
 #### MAYBE ADD Uniprotws to complete the annotation in case it is necessayry !!!!
 
-# Remove duplicated Gene_names
-g1_vs_rest <- g1_vs_rest[order(g1_vs_rest$Gene.names_1),]
-g1_vs_rest <- g1_vs_rest[!duplicated(g1_vs_rest$Gene.names_1),]
-#----
+# Remove duplicated Gene_names and NAs
+g1_vs_rest <- g1_vs_rest %>% 
+  filter(!duplicated(Gene.names_1)) %>% 
+  filter(!is.na(Gene.names_1))
+
 
 #### GSEA analysis----
 # For each dataset, create a ranked list, list will be ranked following the formula
