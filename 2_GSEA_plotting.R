@@ -1,7 +1,13 @@
-### Redundancy removal after GSEA
+##################### 
+### GSEA Plots #####
+#####################
 
-#### Apply the last Rscript----
+###### HE DE TESTEJAR QUE LES FUNCIONS FUNCIONEN I QUAN FUNCIONIN TANT LA MINESTRONE COM LA TREEMPING ES POSARAN SI MES NO LO QUE HEM FET FINS ARA FUNCIONA PROU BE
+#### APPLY THE GSEA based on rank script !!!!
+
+### Libraries and WD 
 library(rstudioapi)
+setwd(dirname(getActiveDocumentContext()$path))
 library(fgsea)
 library(org.Hs.eg.db)
 library(ggExtra)
@@ -9,34 +15,20 @@ library(plyr)
 library(ggnewscale)
 library(treemap)
 library(plotly)
-setwd(dirname(getActiveDocumentContext()$path))
 
-### RUN FIRST 1_GSEA_based_on_rank_script !!!
-#----
-
-### GSEA required data----
+### Test that you have he data to do the plot
 # ranked lists are already annotated
 head(rnk_g1)
 
 # .gmt file aready imported
 head(names(pathways))
-#----
-
-### Collapse GSEA results----
-collapsedPathways1 <- collapsePathways(fgseaRes1[order(pval)][padj < 0.05], 
-                                      pathways, rnk_g1)
-mainPathways1 <- fgseaRes1[pathway %in% collapsedPathways1$mainPathways][
-  order(-NES), pathway]
-plotGseaTable(pathways[mainPathways1], rnk_g4, fgseaRes4, 
-              gseaParam = 1)
-#----
 
 
-### Plotting the results (nicely)----
+############################################################################ Plotting the results (nicely) ##############################################################
 # Get the data to plot
 mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
 
-# Clean path names when plotting 
+## Clean path names when plotting 
 # save all pathway names
 mainPathways1$old_path <- mainPathways1$pathway
 
@@ -51,8 +43,8 @@ mainPathways1 <- mainPathways1 %>%
 mainPathways1 <- mainPathways1[order(mainPathways1$pathway),]
 mainPathways1 <- mainPathways1[!duplicated(mainPathways1$pathway),]
 
-## NES values
-nessy <- ggplot(mainPathways1)+
+### NES values
+nessie <- ggplot(mainPathways1)+
   geom_col(aes(x = reorder(pathway,NES), y = NES, fill = NES < 0))+
   geom_line(aes(group=1, x = reorder(pathway,NES), y = size/100), col = "darkgreen")+
   theme_classic()+
@@ -61,9 +53,10 @@ nessy <- ggplot(mainPathways1)+
   labs(title = "Enriched pathways", x = "Pathway")+
   scale_fill_manual(values = c("#0077B6","#FF0800"))+
   coord_flip()
-nessy
+nessie
 
-## Dotplot follow this when more than a group is being studied, the example can handle 4 gorups but mor
+### Dotplot 
+# follow this when more than a group is being studied, the example can handle 4 gorups but more
 # can be added
 # Create the data frame
 names_gseas <- c("Group 1","Group 2","Group 3","Group 4")
@@ -116,7 +109,7 @@ for (i in 1:length(gseas_to_dot$order)){
 gseas_to_dot$order <- as.numeric(gseas_to_dot$order)
 
 # Do the plot
-ggplot(gseas_to_dot)+
+sulley <- ggplot(gseas_to_dot)+
   geom_point(aes(x = group, y = reorder(pathway, order), size = gene_ratio, color = padj))+ ### FORCE THE ORDER AT THE Y AXIS !!!
   scale_color_gradient(low = "red", high = "blue")+
   labs(title = "GSEA enrichment",x = "Pacient group", y = "Path", 
@@ -130,8 +123,9 @@ ggplot(gseas_to_dot)+
   geom_tile(aes(x = group, y = -1, fill = group), show.legend = F)+
   new_scale_colour()+
   scale_fill_manual(values = c("#0d0887","#ff1493","#00ff00","#a020f0"))
+sulley
 
-## Letter soup
+### Letter soup
 gseea1 <- gseas_to_dot[gseas_to_dot$group == "Group 1",]
 
 soup1 <- as.data.frame(collapsedPathways1$parentPathways)
@@ -173,7 +167,7 @@ treemap(soup1, #Your data frame object
         title="GSEA Collapsing process")
 
 
-## Making a simple graph for a enriched term
+### Making a simple graph for a enriched term
 # This is a down-regulated path
 plotEnrichment(pathways[["COMPLEMENT CASCADE%REACTOME%R-HSA-166658.4"]],
                rnk_g1) + labs(title="Complement cascade")
@@ -181,4 +175,4 @@ plotEnrichment(pathways[["COMPLEMENT CASCADE%REACTOME%R-HSA-166658.4"]],
 # This is an up-regulated path
 plotEnrichment(pathways[["SIGNALING BY RHO GTPASES, MIRO GTPASES AND RHOBTB3%REACTOME DATABASE ID RELEASE 84%9716542"]],
                rnk_g1) + labs(title="Signaling by rho GTP-ases, MIRO GTPases and RHO RHOBTB")
-#----
+

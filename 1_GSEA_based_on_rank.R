@@ -1,6 +1,8 @@
-### GSEA Analysis
+##################### 
+### GSEA Analysis ###
+#####################
 
-### Libraries and WD----
+### Libraries, WD and basic folder setup
 library(rstudioapi)
 setwd(dirname(getActiveDocumentContext()$path))
 
@@ -25,25 +27,20 @@ library(msigdbr)
 library(fgsea)
 library(org.Hs.eg.db)
 
+# function to work with the accessions
 source("./functions/first_accession.R")
-#----
-
-# A Top-Table Type object should had been already created
-### Get the data----
-g1_vs_rest <- openxlsx::read.xlsx("./raw_data/TT_up_and_down_1_vs_rest.xlsx", sheet = 1)
 
 # Create a basic file system
 wd <- getwd()
 dir.create(file.path(wd,"../raw_data"))
 dir.create(file.path(wd,"../results"))
 dir.create(file.path(wd,"../plots"))
-#----
 
+### Get the data
+g1_vs_rest <- openxlsx::read.xlsx("./raw_data/TT_up_and_down_1_vs_rest.xlsx", sheet = 1) ## If it is a normal TopTable the script shall be prety straight-forward
 
 ### Filter out unwanted columns and reshape the TT dataframe
 rownames(g1_vs_rest) <- g1_vs_rest$Accession
-
-##original_dataframe <- g1_vs_rest
 
 # Filter the dataframe by adj.PValue
 g1_vs_rest <- g1_vs_rest %>% 
@@ -62,9 +59,8 @@ logfc_g1 <- grep(pattern = "^logFC", colnames(g1_vs_rest))
 g1_vs_rest <- g1_vs_rest[,c(c(1,2,3),
                             c(logfc_g1),
                             c(pval_g1,adj.pval_g1))]
-#----
 
-### Complete the annotation of the dataframe-----
+## Complete the annotation of the dataframe
 # Obtain a list consisting of all the accession names in the dataset
 g_acs_1 <- strsplit(g1_vs_rest$Accession, "\\;")
 
@@ -93,7 +89,7 @@ g1_vs_rest <- g1_vs_rest %>%
   filter(!is.na(Gene.names_1))
 
 
-#### GSEA analysis----
+#### GSEA analysis
 # For each dataset, create a ranked list, list will be ranked following the formula
 # rank = (-log10(pvalue)*logFC)
 g1_vs_rest$rank <- (-log10(g1_vs_rest$P.Value))*g1_vs_rest$logFC 
@@ -116,4 +112,24 @@ fgseaRes1 <- fgsea(pathways = pathways,
                    stats    = rnk_g1,
                    minSize  = 30,
                    maxSize  = 500, gseaParam = 0.5)
-#----
+
+## Remove redundant pathways
+# Perform the collapse
+collapsedPathways1 <- collapsePathways(fgseaRes1[order(pval)][padj < 0.05], 
+                                       pathways, rnk_g1)
+# Main paths
+mainPathways1 <- fgseaRes1[pathway %in% collapsedPathways1$mainPathways][
+  order(-NES), pathway]
+
+# Plot a bit the table
+plotGseaTable(pathways[mainPathways1], rnk_g4, fgseaRes4, 
+              gseaParam = 1)
+
+# Another way of getting the main pathways 
+mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
+
+
+
+
+
+
