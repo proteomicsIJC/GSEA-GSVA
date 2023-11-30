@@ -56,6 +56,10 @@ nessie <- ggplot(mainPathways1)+
   coord_flip()
 nessie
 
+# Save the plot
+ggsave(filename = "../plots/GSEA_NES.tiff", plot = nessie,
+       units = "cm", height = 20, width = 30)
+
 ### Dotplot 
 # follow this when more than a group is being studied, the example can handle 4 gorups but more
 # can be added
@@ -126,6 +130,10 @@ sulley <- ggplot(gseas_to_dot)+
   scale_fill_manual(values = c("#0d0887","#ff1493","#00ff00","#a020f0"))
 sulley
 
+# Save the plot
+ggsave(filename = "../plots/GSEA_dots.tiff", plot = sulley,
+       units = "cm", height = 20, width = 30)
+
 ### Letter soup
 soup1 <- minestrone_for_GSEA(collapsed_list = collapsedPathways1, original_data = fgseaRes1)
 
@@ -136,6 +144,8 @@ soup1$size <- 1
 x <- soup1$child
 soup1$size <- fgseaRes1$size[match(x, fgseaRes11$Description)]
 
-# Do the plot
-soup1 <- treemaping(soup = soup1, graph_title = "Group1 vs Group2 FGSE collapse")
+# Do the plot and save it
+png("../plots/GSEA_collapse.png", height = 1400, width = 1400)
+treemaping(soup = soup1, graph_title = "Group1 vs Group2 GSEA collapse")
+dev.off()
 
