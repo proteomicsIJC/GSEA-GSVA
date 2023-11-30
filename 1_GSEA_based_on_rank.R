@@ -115,8 +115,15 @@ fgseaRes1 <- fgsea(pathways = pathways,
 # Copy to save
 fgseaRes11 <- fgseaRes1
 fgseaRes11 <- as.data.frame(apply(fgseaRes11, 2, function(y) sapply(y, function(x) paste(unlist(x), collapse=":"))))
+fgseaRes11$Description <- fgseaRes11$pathway
+fgseaRes11 <- fgseaRes11 %>% 
+  mutate(Description = gsub("%.*%","",Description)) %>% 
+  mutate(Description = gsub("GO\\:","",Description)) %>% 
+  mutate(Description = gsub("[0-9]{5,7}$","",Description)) %>% 
+  mutate(Description = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",Description)) %>%
+  mutate(Description = gsub("HALLMARK\\_","",Description)) %>% 
+  mutate(Description = gsub("\\_"," ",Description))
 readr::write_tsv("./results/GSEA_1.tsv", x = fgseaRes11)
-
 
 ## Remove redundant pathways
 # Perform the collapse
@@ -135,5 +142,13 @@ mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
 # Copy to save
 mainPathways11 <- mainPathways1
 mainPathways11 <- as.data.frame(apply(mainPathways1, 2, function(y) sapply(y, function(x) paste(unlist(x), collapse=":"))))
+mainPathways11$Description <- mainPathways11$pathway
+mainPathways11 <- mainPathways11 %>% 
+  mutate(Description = gsub("%.*%","",pathway)) %>% 
+  mutate(Description = gsub("GO\\:","",pathway)) %>% 
+  mutate(Description = gsub("[0-9]{5,7}$","",pathway)) %>% 
+  mutate(Description = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",pathway)) %>%
+  mutate(Description = gsub("HALLMARK\\_","",pathway)) %>% 
+  mutate(Description = gsub("\\_"," ",pathway))
 readr::write_tsv("./results/main_Paths_GSEA_1.tsv", x = mainPathways11)
 
