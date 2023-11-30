@@ -115,7 +115,7 @@ fgseaRes1 <- fgsea(pathways = pathways,
 # Copy to save
 fgseaRes11 <- fgseaRes1
 fgseaRes11 <- as.data.frame(apply(fgseaRes11, 2, function(y) sapply(y, function(x) paste(unlist(x), collapse=":"))))
-readr::write_tsv("./results/GSEA_1.tsv")
+readr::write_tsv("./results/GSEA_1.tsv", x = fgseaRes11)
 
 
 ## Remove redundant pathways
@@ -135,5 +135,5 @@ mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
 # Copy to save
 mainPathways11 <- mainPathways1
 mainPathways11 <- as.data.frame(apply(mainPathways1, 2, function(y) sapply(y, function(x) paste(unlist(x), collapse=":"))))
-readr::write_tsv("./results/main_Paths_GSEA_1.tsv")
+readr::write_tsv("./results/main_Paths_GSEA_1.tsv", x = mainPathways11)
 
