@@ -127,53 +127,15 @@ sulley <- ggplot(gseas_to_dot)+
 sulley
 
 ### Letter soup
-gseea1 <- gseas_to_dot[gseas_to_dot$group == "Group 1",]
+soup1 <- minestrone_for_GSEA(collapsed_list = collapsedPathways1, original_data = fgseaRes1)
 
-soup1 <- as.data.frame(collapsedPathways1$parentPathways)
-soup1$child <- rownames(soup1)
-colnames(soup1)[1] <- "parent"
-
-soup1 <- soup1 %>% 
-  filter(parent %in% gseea1$old_path)
-
-for (i in 1:length(rownames(soup1))){
-  if (is.na(soup1$parent[i])){
-    soup1$parent[i] <- soup1$child[i]
-    }}
+# set the size
 soup1$size <- 1
 
-soup1 <- soup1 %>% 
-  mutate(parent = gsub("%.*%","",parent)) %>% 
-  mutate(parent = gsub("GO\\:","",parent)) %>% 
-  mutate(parent = gsub("[0-9]{5,7}$","",parent)) %>% 
-  mutate(parent = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",parent)) %>%
-  mutate(parent = gsub("HALLMARK\\_","",parent)) %>% 
-  mutate(parent = gsub("\\_"," ",parent))
-
-
-soup1 <- soup1 %>% 
-  mutate(child = gsub("%.*%","",child)) %>% 
-  mutate(child = gsub("GO\\:","",child)) %>% 
-  mutate(child = gsub("[0-9]{5,7}$","",child)) %>% 
-  mutate(child = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",child)) %>%
-  mutate(child = gsub("HALLMARK\\_","",child)) %>% 
-  mutate(child = gsub("\\_"," ",child))
+# set the size (nicely)
+x <- soup1$child
+soup1$size <- fgseaRes1$size[match(x, fgseaRes11$Description)]
 
 # Do the plot
-treemap(soup1, #Your data frame object
-        index=c("parent","child"),  #A list of your categorical variables
-        vSize = "size",  #This is your quantitative variable
-        type="index", #Type sets the organization and color scheme of your treemap
-        palette = "Blues",  #Select your color palette from the RColorBrewer presets or make your own.
-        title="GSEA Collapsing process")
-
-
-### Making a simple graph for a enriched term
-# This is a down-regulated path
-plotEnrichment(pathways[["COMPLEMENT CASCADE%REACTOME%R-HSA-166658.4"]],
-               rnk_g1) + labs(title="Complement cascade")
-
-# This is an up-regulated path
-plotEnrichment(pathways[["SIGNALING BY RHO GTPASES, MIRO GTPASES AND RHOBTB3%REACTOME DATABASE ID RELEASE 84%9716542"]],
-               rnk_g1) + labs(title="Signaling by rho GTP-ases, MIRO GTPases and RHO RHOBTB")
+soup1 <- treemaping(soup = soup1, graph_title = "Group1 vs Group2 FGSE collapse")
 
