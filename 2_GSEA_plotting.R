@@ -2,7 +2,6 @@
 ### GSEA Plots #####
 #####################
 
-###### HE DE TESTEJAR QUE LES FUNCIONS FUNCIONEN I QUAN FUNCIONIN TANT LA MINESTRONE COM LA TREEMPING ES POSARAN SI MES NO LO QUE HEM FET FINS ARA FUNCIONA PROU BE
 #### APPLY THE GSEA based on rank script !!!!
 
 ### Libraries and WD 
@@ -16,6 +15,9 @@ library(ggnewscale)
 library(treemap)
 library(plotly)
 
+source("./functions/minestrone.R")
+source("./functions/treemaping.R")
+
 ### Test that you have he data to do the plot
 # ranked lists are already annotated
 head(rnk_g1)
@@ -23,11 +25,10 @@ head(rnk_g1)
 # .gmt file aready imported
 head(names(pathways))
 
+# main paths
+head(mainPathways1)
 
-############################################################################ Plotting the results (nicely) ##############################################################
-# Get the data to plot
-mainPathways1 <- fgseaRes1[fgseaRes1$pathway %in% mainPathways1][order(-NES)]
-
+#### Plotting the results (nicely)
 ## Clean path names when plotting 
 # save all pathway names
 mainPathways1$old_path <- mainPathways1$pathway
