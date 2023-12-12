@@ -105,6 +105,7 @@ rnk_g1 <- sort(rnk_g1, decreasing = TRUE)
 
 # Gene sets
 ## http://baderlab.org/GeneSets
+## https://download.baderlab.org/EM_Genesets/
 pathways <- gmtPathways(gmt.file = "../raw_data/Human_GOBP_AllPathways_no_GO_iea_July_03_2023_symbol.gmt")
 
 # Gesea analysis
