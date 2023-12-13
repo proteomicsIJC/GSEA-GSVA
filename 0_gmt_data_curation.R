@@ -37,10 +37,41 @@ listCollections(msigdb_human)
 listSubCollections(msigdb_human)
 
 # Get the wanted collections
-hallmark <- subsetCollection(gsc = gsc, collection = "h")
-c2_cp <- subsetCollection(gsc = gsc, collection = "c2", subcollection = "CP")
-c5_gobp <- subsetCollection(gsc = gsc, collection = "c5", subcollection = "GO:BP")
+hallmark <- subsetCollection(gsc = msigdb_human, collection = "h")
 
+c2 <- subsetCollection(gsc = msigdb_human, collection = "c2")
+c2_cp <- subsetCollection(gsc = c2, subcollection = c("CP:BIOCARTA", "CP:PID","CP:REACTOME",
+                                                         "CP:WIKIPATHWAYS","CP:KEGG"))
+
+c5 <- subsetCollection(gsc = msigdb_human, collection = "c5")
+c5_gobp <- subsetCollection(gsc = c5, subcollection = "GO:BP")
+
+### Time to make a list for each 
+hallmark_list <- list()
+for (i in 1:length(hallmark)){
+  set_unique <- hallmark[i]
+  genes_of_set_unique <- geneIds(set_unique)
+  hallmark_list[[i]] <- genes_of_set_unique[[1]]
+  names(hallmark_list)[i] <- names(genes_of_set_unique)
+}
+
+c2_cp_list <- list()
+for (i in 1:length(c2_cp)){
+  set_unique <- c2_cp[i]
+  genes_of_set_unique <- geneIds(set_unique)
+  c2_cp_list[[i]] <- genes_of_set_unique[[1]]
+  names(c2_cp_list)[i] <- names(genes_of_set_unique)
+}
+
+c5_cp_list <- list()
+for (i in 1:length(c5_gobp)){
+  set_unique <- c5_gobp[i]
+  genes_of_set_unique <- geneIds(set_unique)
+  c5_cp_list[[i]] <- genes_of_set_unique[[1]]
+  names(c5_cp_list)[i] <- names(genes_of_set_unique)
+}
+
+### curate the file c5_cp_list with the quickGO dataset
 
 
 
