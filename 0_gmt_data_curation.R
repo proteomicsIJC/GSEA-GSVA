@@ -20,6 +20,8 @@ setwd(dirname(getActiveDocumentContext()$path))
 library(msigdb)
 library(BiocFileCache)
 library(GSEABase)
+library(ActivePathways)
+library(tidyverse)
 
 ### Download  the data using and msigdb
 gsc <- getMsigdb(version = "7.5", org = "hs")
@@ -72,6 +74,76 @@ for (i in 1:length(c5_gobp)){
 }
 
 ### curate the file c5_cp_list with the quickGO dataset
+not_good_bp1 <- readr::read_tsv("./raw_data/QuickGO-annotations-1702502595807-20231213.tsv")
+not_good_bp2 <- readr::read_tsv("./raw_data/QuickGO-annotations-1702502639380-20231213.tsv")
 
+not_good_bp <- rbind(not_good_bp1,not_good_bp2)
+remove(not_good_bp1);remove(not_good_bp2)
+
+not_good_bp <- not_good_bp %>% 
+  subset(select = c(`GO NAME`, SYMBOL)) %>% 
+  dplyr::mutate(`GO NAME` = toupper(`GO NAME`)) %>% 
+  dplyr::mutate(`GO NAME` = gsub(pattern = " ", replacement = "_", x = `GO NAME`)) %>% 
+  dplyr::mutate(`GO NAME` = paste0("GOBP_", `GO NAME`))
+
+not_good_bp_collapse <- not_good_bp %>% 
+  dplyr::group_by(`GO NAME`) %>% 
+  dplyr::summarise(SYMBOL = paste0(SYMBOL, collapse = ","))
+
+bad_go_bp_list <- list()
+for (i in 1:length(rownames(not_good_bp_collapse))){
+  genes_of_path <- not_good_bp_collapse$SYMBOL[i]
+  genes_of_path <- unlist(strsplit(genes_of_path, split = ","))
+  bad_go_bp_list[[i]] <- genes_of_path
+  names(bad_go_bp_list)[i] <- not_good_bp_collapse$`GO NAME`[i]
+}
+
+### subset c5_cp_list based on the bad_go_bp_list
+# Identify shared elements
+shared_names <- intersect(names(c5_cp_list), names(bad_go_bp_list))
+
+# Keep non-shared elements or elements with different values
+c5_cp_list_good <- c5_cp_list
+c5_cp_list_good <- lapply(names(c5_cp_list_good), function(name){
+  if (name %in% shared_names){
+    shared_elements <- intersect(c5_cp_list_good[[name]], bad_go_bp_list[[name]])
+    if (length(shared_elements) > 0){
+      c5_cp_list_good[[name]] <- setdiff(c5_cp_list_good[[name]], shared_elements)
+    }
+  }
+  c5_cp_list_good[[name]]
+})
+names(c5_cp_list_good) <- names(c5_cp_list)
+
+list1 <- c5_cp_list
+list2 <- c5_cp_list_good
+shared_names <- intersect(names(list1), names(list2))
+
+# Extract elements with different number of elements
+different_elements <- lapply(shared_names, function(name) {
+  if (length(list1[[name]]) != length(list2[[name]])) {
+    list(name = name, list1 = list1[[name]], list2 = list2[[name]])
+  }
+})
+
+# Remove NULL elements from the list
+different_elements <- different_elements[!sapply(different_elements, is.null)]
+
+# View the elements with different number of elements
+head(print(different_elements))
+
+### Save the list
+paths_to_gmt <- c(hallmark_list, c2_cp_list, c5_cp_list_good)
+paths_to_gmt_data <- paths_to_gmt
+for (i in 1:length(names(paths_to_gmt_data))){
+  paths_to_gmt_data[[i]] <- paste0(paths_to_gmt_data[[i]], collapse = ",")
+}
+
+paths_to_gmt_data <- as.data.frame(paths_to_gmt_data)
+to_pivot_long <- colnames(paths_to_gmt_data)
+paths_to_gmt_data <- paths_to_gmt_data %>% 
+  pivot_longer(cols = all_of(to_pivot_long),
+               names_to = "paths",
+               values_to = "genes")
 
 
