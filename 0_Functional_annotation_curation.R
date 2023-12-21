@@ -42,8 +42,11 @@ listSubCollections(msigdb_human)
 hallmark <- subsetCollection(gsc = msigdb_human, collection = "h")
 
 c2 <- subsetCollection(gsc = msigdb_human, collection = "c2")
-c2_cp <- subsetCollection(gsc = c2, subcollection = c("CP:BIOCARTA", "CP:PID","CP:REACTOME",
-                                                         "CP:WIKIPATHWAYS","CP:KEGG"))
+c2_cp <- subsetCollection(gsc = c2, subcollection = c(##"CP:BIOCARTA", 
+                                                      "CP:PID","CP:REACTOME",
+                                                         "CP:WIKIPATHWAYS"
+                                                      ##,"CP:KEGG"
+                                                      ))
 
 c5 <- subsetCollection(gsc = msigdb_human, collection = "c5")
 c5_gobp <- subsetCollection(gsc = c5, subcollection = "GO:BP")
@@ -146,4 +149,4 @@ paths_to_gmt_data <- paths_to_gmt_data %>%
                names_to = "paths",
                values_to = "genes")
 
-
+readr::write_tsv("./results/table_to_futurible_gmt_no_kegg.tsv", x = paths_to_gmt_data)
