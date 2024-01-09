@@ -4,17 +4,19 @@
 library(Biobase)
 library(GSVA)
 library(GSVAdata)
+library(tidyverse)
+library(dplyr)
 
 data(c2BroadSets)
 class(c2BroadSets)
 data(gbm_VerhaakEtAl)
 expression_matrix <- exprs(gbm_eset)
-expression_matrix <- expression_matrix[,c(1:5)]
+expression_matrix <- expression_matrix[c(1:30),c(1:2)]
 
 data(brainTxDbSets)
 pathways <- as.list(brainTxDbSets)
 pathways <- fgsea::gmtPathways("./raw_data/Human_GOBP_AllPathways_no_GO_iea_July_03_2023_symbol.gmt")
-pathways <- pathways[1:4000]
+pathways <- pathways[1:1000]
 
 remove(c2BroadSets)
 remove(gbm_eset)
@@ -22,10 +24,10 @@ remove(brainTxDbSets)
 
 ##### HERE THE FUNCTION WOULD START THE WORK <3
 ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
-                   max_length, min_length, min_Ratio,
-                   organism = "org.Hs.eg.db", use_enrichr = F, 
+                   max_length = 250, min_length = 10, min_Ratio = 0,
+                   organism = "org.Hs.eg.db", use_enrichr = F,
                    collapse = F,
-                   alpha = 0.25){
+                   alpha = 0.25, scale_size = F, scale_ratio = F){
   ### GENSET WORK
   # Once the list is done, time to work with the data of the list
   cat(paste0("Creating an enriched version of the annotation","\n"))
@@ -35,12 +37,11 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
   ## Extract the genes of the path
   path_now_genes <- pathways[[i]]
   ## Calculate the lenght of the path and the ratio of it
-  path_now_length <- length(path_now_genes)
   path_now_ratio <- length(intersect(path_now_genes, rownames(expression_matrix)))/length(path_now_genes)
   
   # Do the nested list
   paths_nested[[i]] <- list(genes = path_now_genes,
-                            long  = path_now_length,
+                            long  = length(intersect(path_now_genes, rownames(expression_matrix))),
                             ratio = path_now_ratio)
   names(paths_nested)[i] <- names(pathways)[i]
   
@@ -196,33 +197,76 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
   num_genes <- nrow(expression_matrix)
   num_samples <- ncol(expression_matrix)
   
-  # Ranking of the genes
-  cat(paste0("Ranked expression matrix can be consulted in the 'ranked_pathways' object","\n"))
-  ranked_matrix <<- matrixStats::colRanks(expression_matrix, preserveShape = T)
-  # Enrichment Score (ES) for each sample (column)
-  ssgsea_result_list <- list()
-  for (sample in 1:length(sample_names)){
-    ssgsea_now <- list()
-    sample_now <- sort(ranked_matrix[,sample_names[sample]], decreasing = T)
-    
+  # Create a ranked matrix
+  ### Rank 1 is hte lowest expressed and rank N the highest!
+  ranked_matrix <<- matrixStats::colRanks(x = expression_matrix, preserveShape = T, ties.method = "average")
+  
+  ## This list will have the results of the enrichment
+  ssgsea_result <- list()
+  ### For each same
+  for (sample in 1:length(colnames(ranked_matrix))){
+    ### This list will be appended, it will contain the enrichment score of each set of genes in the sample
+    sample_list <- list()
+    ### Transform the sample row of the ranked matrix to a ranked named vector, like in the classical GSEA
+    sample_now <- ranked_matrix[,sample, drop = F]
+    sample_now <- as.data.frame(sample_now)
+    sample_name <- colnames(sample_now) ### This is quite practical, here the sample name is stored
+    colnames(sample_now) <- "rank"
+    sample_now$genes <- rownames(sample_now)
+    sample_now <- sample_now %>% 
+      arrange(rank)
+    ranked_genes <- sample_now$rank
+    names(ranked_genes) <- sample_now$genes
+    ### for each set (pathways_onto_the_analysis) calculate the enrichment
     for (set in 1:length(pathways_onto_the_analysis)){
-      ## HERE APPEND ssgsea_now !!
-      ## ALSO ADD NAMES will be the sets
+      set_now_name <<- names(pathways_onto_the_analysis)[set]
+      set_now_genes <<- pathways_onto_the_analysis[[set]]
+      
+      ## indicator pos and negative
+      # indicator pos: indicator that means that the gene is in the gene set and it will go to the positive part of the formula
+      # indicator neg: indicator that means that the gene is not in the gene set and it will go to the negative part of the formula
+      indicator_pos <<- names(ranked_genes) %in% set_now_genes 
+      indicator_neg <<- !indicator_pos
+      
+      ## positive part of the formula
+      rank_alpha <- (ranked_genes*indicator_pos)^alpha
+      positive_part <- cumsum(rank_alpha)/sum(rank_alpha)
+      
+      ## negative part of the formula
+      negative_part <- cumsum(indicator_neg)/sum(indicator_neg)
+      
+      ## difference calculation
+      diff <- positive_part - negative_part
+      
+      ## now in case we want, normalize by gene set size or gene set ratio
+      if (scale_size) {
+        diff <- diff/length(set_now_genes)}
+      if (scale_ratio) {
+        ratio_of_set <- pathways_enriched[[set_now_name]]$ratio
+        diff <- diff*ratio_of_set}
+      
+      ## final sum
+      diff <- sum(diff)*(-1)
+      ## append the sample enrichment score list
+      sample_list[[set]] <- diff
+      names(sample_list)[set] <- set_now_name
       cat(paste0("Enrichment for Set ",set,"/",length(pathways_onto_the_analysis),"\r"))
     }
-    ## HERE APPEND ssgsea_result_list !!
-    ## ALSO ADD THE NAMES (will be the samples)
+    ssgsea_result[[sample]] <- sample_list
+    names(ssgsea_result)[sample] <- sample_names[sample]
     cat(paste0("Enrichment for sample ",sample,"/",num_samples," named: ",sample_names[sample],"\n"))
   }
-
-  return(sample_now)
+  ### MAKE A MATRIX FROM THE LIST
+  
+  return(ssgsea_result)
   }
 
 tictoc::tic()
 result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways,  
-                 max_length = 100, min_length = 1, min_Ratio = 0.2, 
-                 organism = "org.Hs.eg.db", use_enrichr = F, collapse = F,
-                 alpha = 0.25)
+                 max_length = 50, min_length = 1, min_Ratio = 0, 
+                 organism = "org.Hs.eg.db", use_enrichr = F, 
+                 collapse = F,
+                 alpha = 0.25, scale_size = F, scale_ratio = F)
 tictoc::toc()
 
 
