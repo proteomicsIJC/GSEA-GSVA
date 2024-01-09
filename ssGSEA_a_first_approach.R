@@ -7,16 +7,16 @@ library(GSVAdata)
 library(tidyverse)
 library(dplyr)
 
-data(c2BroadSets)
+ data(c2BroadSets)
 class(c2BroadSets)
 data(gbm_VerhaakEtAl)
 expression_matrix <- exprs(gbm_eset)
-expression_matrix <- expression_matrix[c(1:30),c(1:2)]
+expression_matrix <- expression_matrix
 
 data(brainTxDbSets)
 pathways <- as.list(brainTxDbSets)
 pathways <- fgsea::gmtPathways("./raw_data/Human_GOBP_AllPathways_no_GO_iea_July_03_2023_symbol.gmt")
-pathways <- pathways[1:1000]
+pathways <- pathways[1:400]
 
 remove(c2BroadSets)
 remove(gbm_eset)
@@ -88,7 +88,7 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
   for (j in 1:length(pathways_removed)){
   pathways_onto_the_analysis[[j]] <- unlist(pathways_removed[[j]], use.names = F)
   names(pathways_onto_the_analysis)[j] <- names(pathways_removed)[j]}
-  
+  pathways_onto_the_analysis <<- pathways_onto_the_analysis
   if ((use_enrichr)){
     cat(paste0("Functional annotation of the data","\n"))
   #### USE enrichr to curate the data more
@@ -257,13 +257,29 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
     cat(paste0("Enrichment for sample ",sample,"/",num_samples," named: ",sample_names[sample],"\n"))
   }
   ### MAKE A MATRIX FROM THE LIST
+  # Save the data names
+  sample_names <- names(ssgsea_result)
+  pathway_names <- unique(unlist(lapply(ssgsea_result, names)))
   
-  return(ssgsea_result)
+  # Initialize the matrix
+  result_matrix <- matrix(0, nrow = length(pathway_names), ncol = length(sample_names),
+                          dimnames = list(pathway_names, sample_names))
+  # Create the matrix
+  for (paths in 1:length(pathway_names)){
+    for (samples in 1:length(sample_names)){
+      if (pathway_names[paths] %in% names(ssgsea_result[[sample_names[samples]]])){
+        result_matrix[paths, samples] <- ssgsea_result[[sample_names[samples]]][[pathway_names[paths]]]
+      }
+    }
+  }
+  result_matrix <- as.data.frame(result_matrix)
+  
+  return(result_matrix)
   }
 
 tictoc::tic()
 result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways,  
-                 max_length = 50, min_length = 1, min_Ratio = 0, 
+                 max_length = 100, min_length = 10, min_Ratio = 0.2, 
                  organism = "org.Hs.eg.db", use_enrichr = F, 
                  collapse = F,
                  alpha = 0.25, scale_size = F, scale_ratio = F)
