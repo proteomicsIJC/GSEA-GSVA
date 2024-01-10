@@ -26,7 +26,7 @@ remove(gbm_eset)
 remove(brainTxDbSets)
 
 tictoc::tic()
-result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways,  
+result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways, recycle = F,
                  max_length = 500, min_length = 30, min_Ratio = 0.66,
                  organism = "org.Hs.eg.db", use_enrichr = T, 
                  collapse = T,
