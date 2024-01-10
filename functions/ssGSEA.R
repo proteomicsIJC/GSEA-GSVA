@@ -4,6 +4,7 @@
 
 ## expression_matrix = expression matrix with colnames as samples and rownames as genes
 ## pathways = a pathway list
+## recycle = if you want to recycle the last functional annotation
 ## max_lenght = max length of a path to be considered
 ## min_lenght = min length of a path to be considered
 ## min_Ratio = the minimum ratio of a path to be considered
