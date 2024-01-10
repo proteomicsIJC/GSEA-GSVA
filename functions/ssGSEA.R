@@ -92,11 +92,10 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
     }))
     colnames(pathways_data) <- c("ID","geneID")
     # Back genes
-    organism <- get(organism)
-    backgGenes <- keys(organism) # EntrezID
-    backgGenes <- AnnotationDbi::select(organism, keys = backgGenes, columns = "UNIPROT") # Converts entrezID to GeneSymbol
+    backgGenes <- AnnotationDbi::keys(get(organism)) # EntrezID
+    backgGenes <- AnnotationDbi::select(get(organism), keys = backgGenes, columns = "UNIPROT") # Converts entrezID to GeneSymbol
     backgGenes <- backgGenes$UNIPROT
-    backgGenes_kk <- AnnotationDbi::select(organism, keys = backgGenes, columns = "SYMBOL", keytype = "UNIPROT") # Converts entrezID to Symbols
+    backgGenes_kk <- AnnotationDbi::select(get(organism), keys = backgGenes, columns = "SYMBOL", keytype = "UNIPROT") # Converts entrezID to Symbols
     backgGenes_kk <- backgGenes_kk$SYMBOL
     
     # Execute cluster profiler
@@ -177,9 +176,9 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
       cat("\n")
       cat("Collapsed process can be consulted in the 'collapsed_pathways' object")
       cat("\n")
-      collapsed_pathways <<- list(mainPaths = names(which(is.na(parentPaths))),
-                                  parent_paths = parentPaths)
-      pathways_onto_the_analysis <- paths_to_collapse[names(pathways_onto_the_analysis) %in% collapsed_pathways$mainPaths]
+      collapsed_pathways <<- list(mainPathways = names(which(is.na(parentPaths))),
+                                  parentPathways = parentPaths)
+      pathways_onto_the_analysis <- pathways_onto_the_analysis[names(pathways_onto_the_analysis) %in% collapsed_pathways$mainPaths]
     }}
   cat(paste0("Pathway data processing finished","\n"))
   cat("\n")
