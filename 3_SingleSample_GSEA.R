@@ -8,6 +8,7 @@ library(tidyverse)
 library(dplyr)
 
 ### source the function
+source("./functions/ssGSEA.R")
 
 data(c2BroadSets)
 class(c2BroadSets)
