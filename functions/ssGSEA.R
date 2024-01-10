@@ -1,84 +1,76 @@
-######################################################
-#### ssGSEA function and workflow in development ####
-#####################################################
-library(Biobase)
-library(GSVA)
-library(GSVAdata)
-library(tidyverse)
-library(dplyr)
+############ 
+## ssGSEA ##
+############
 
- data(c2BroadSets)
-class(c2BroadSets)
-data(gbm_VerhaakEtAl)
-expression_matrix <- exprs(gbm_eset)
-expression_matrix <- expression_matrix
+## expression_matrix = expression matrix with colnames as samples and rownames as genes
+## pathways = a pathway list
+## max_lenght = max length of a path to be considered
+## min_lenght = min length of a path to be considered
+## min_Ratio = the minimum ratio of a path to be considered
+## use_enrichr = functionaly enrich the paths present in the dataset
+## organism = in case use use_enrichr is TRUE, the organims
+## collapse = collapse enriched paths only if the collapsing if use_enrichr is TRUE
+## alpha = exponent of the positive ranking genes
+## scale_size = normalize by GeneSet size
+## scale_ratio = normalize by GeneSet Ratio
+## curated_results = create a curated version of the results
 
-data(brainTxDbSets)
-pathways <- as.list(brainTxDbSets)
-pathways <- fgsea::gmtPathways("./raw_data/Human_GOBP_AllPathways_no_GO_iea_July_03_2023_symbol.gmt")
-pathways <- pathways[1:400]
-
-remove(c2BroadSets)
-remove(gbm_eset)
-remove(brainTxDbSets)
-
-##### HERE THE FUNCTION WOULD START THE WORK <3
 ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
                    max_length = 250, min_length = 10, min_Ratio = 0,
-                   organism = "org.Hs.eg.db", use_enrichr = F,
+                   use_enrichr = F, organism = "org.Hs.eg.db",
                    collapse = F,
-                   alpha = 0.25, scale_size = F, scale_ratio = F){
+                   alpha = 0.25, scale_size = F, scale_ratio = F, curated_results = F){
   ### GENSET WORK
   # Once the list is done, time to work with the data of the list
   cat(paste0("Creating an enriched version of the annotation","\n"))
   paths_nested <- list()
   
   for (i in 1:length(pathways)){
-  ## Extract the genes of the path
-  path_now_genes <- pathways[[i]]
-  ## Calculate the lenght of the path and the ratio of it
-  path_now_ratio <- length(intersect(path_now_genes, rownames(expression_matrix)))/length(path_now_genes)
-  
-  # Do the nested list
-  paths_nested[[i]] <- list(genes = path_now_genes,
-                            long  = length(intersect(path_now_genes, rownames(expression_matrix))),
-                            ratio = path_now_ratio)
-  names(paths_nested)[i] <- names(pathways)[i]
-  
-  ## Filter the nested list
-
-  # Define the function to filter
-  filter_path <- function(enriched_path_list, min_length, max_length, min_ratio){
-    filtered_paths <- lapply(enriched_path_list, function(path) {
-      if (path$long >= min_length && path$long <= max_length &&
-          path$ratio >= min_ratio) {
+    ## Extract the genes of the path
+    path_now_genes <- pathways[[i]]
+    ## Calculate the lenght of the path and the ratio of it
+    path_now_ratio <- length(intersect(path_now_genes, rownames(expression_matrix)))/length(path_now_genes)
+    
+    # Do the nested list
+    paths_nested[[i]] <- list(genes = path_now_genes,
+                              long  = length(intersect(path_now_genes, rownames(expression_matrix))),
+                              ratio = path_now_ratio)
+    names(paths_nested)[i] <- names(pathways)[i]
+    
+    ## Filter the nested list
+    
+    # Define the function to filter
+    filter_path <- function(enriched_path_list, min_length, max_length, min_ratio){
+      filtered_paths <- lapply(enriched_path_list, function(path) {
+        if (path$long >= min_length && path$long <= max_length &&
+            path$ratio >= min_ratio) {
+          return(path)
+        } else {
+          return(NULL)
+        }
+      })
+      filtered_paths <- filtered_paths[!sapply(filtered_paths, is.null)]
+      return(filtered_paths)
+    }
+    
+    # run the function
+    pathways_enriched <- filter_path(enriched_path_list = paths_nested, 
+                                     min_length = min_length, max_length = max_length, 
+                                     min_ratio = min_Ratio)
+    pathways_enriched <<- pathways_enriched
+    
+    # once the list is filtered, remove the extra data
+    
+    filter_the_info <- function(enriched_path_list){
+      remove_extra_info <- lapply(enriched_path_list, function(path) {
+        path$long <- NULL  # Remove length
+        path$ratio <- NULL   # Remove ratio
         return(path)
-      } else {
-        return(NULL)
-      }
-    })
-    filtered_paths <- filtered_paths[!sapply(filtered_paths, is.null)]
-    return(filtered_paths)
-  }
-  
-  # run the function
-  pathways_enriched <- filter_path(enriched_path_list = paths_nested, 
-                                   min_length = min_length, max_length = max_length, 
-                                   min_ratio = min_Ratio)
-  pathways_enriched <<- pathways_enriched
-  
-  # once the list is filtered, remove the extra data
-  
-  filter_the_info <- function(enriched_path_list){
-    remove_extra_info <- lapply(enriched_path_list, function(path) {
-      path$long <- NULL  # Remove length
-      path$ratio <- NULL   # Remove ratio
-      return(path)
-    })
-    return(remove_extra_info)
-  }
-  pathways_removed <- filter_the_info(enriched_path_list = pathways_enriched)
-  cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")
+      })
+      return(remove_extra_info)
+    }
+    pathways_removed <- filter_the_info(enriched_path_list = pathways_enriched)
+    cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")
   }
   cat(paste0("Enriched path annotation can be consulted in the 'pathway_enriched' object","\n"))
   pathways_onto_the_analysis <- list()
@@ -86,16 +78,16 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
   cat("Filtering pathways by length and ratio", "\n")
   cat("\n")
   for (j in 1:length(pathways_removed)){
-  pathways_onto_the_analysis[[j]] <- unlist(pathways_removed[[j]], use.names = F)
-  names(pathways_onto_the_analysis)[j] <- names(pathways_removed)[j]}
+    pathways_onto_the_analysis[[j]] <- unlist(pathways_removed[[j]], use.names = F)
+    names(pathways_onto_the_analysis)[j] <- names(pathways_removed)[j]}
   pathways_onto_the_analysis <<- pathways_onto_the_analysis
   if ((use_enrichr)){
     cat(paste0("Functional annotation of the data","\n"))
-  #### USE enrichr to curate the data more
-  # annotation to data frame
+    #### USE enrichr to curate the data more
+    # annotation to data frame
     pathways_data <- do.call(rbind, lapply(names(pathways_onto_the_analysis), function(path) {
       data.frame(path = path, gene = pathways[[path]])
-      }))
+    }))
     colnames(pathways_data) <- c("ID","geneID")
     # Back genes
     organism <- get(organism)
@@ -104,14 +96,14 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
     backgGenes <- backgGenes$UNIPROT
     backgGenes_kk <- AnnotationDbi::select(organism, keys = backgGenes, columns = "SYMBOL", keytype = "UNIPROT") # Converts entrezID to Symbols
     backgGenes_kk <- backgGenes_kk$SYMBOL
-  
-  # Execute cluster profiler
+    
+    # Execute cluster profiler
     cluster_prof <- clusterProfiler::enricher(gene = c(rownames(expression_matrix)), TERM2GENE = pathways_data,
                                               universe = backgGenes_kk,
                                               pvalueCutoff = 0.05, qvalueCutoff = 0.01,
                                               minGSSize = min_length, maxGSSize = max_length)
-  
-  # Save clustser profiler data
+    
+    # Save clustser profiler data
     cat(paste0("Functional annotation result can be consulted in the 'cluster_prof_table' note that only significantly enriched are annotated","\n"))
     cluster_prof_table <- cluster_prof@result
     cluster_prof_table <- cluster_prof_table %>% 
@@ -132,10 +124,10 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
       functional_annot <- cluster_prof_table
       functional_annot <- functional_annot %>%
         dplyr::arrange(pvalue)
-    
+      
       paths_to_collapse <- paths_to_collapse[functional_annot$ID]
       paths_to_collapse <- lapply(paths_to_collapse, intersect, universe)
-    
+      
       # set a parent paths
       parentPaths <- setNames(rep(NA, length(paths_to_collapse)), names(paths_to_collapse))
       for (k in 1:length(paths_to_collapse)) {
@@ -143,29 +135,29 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
         p <- names(paths_to_collapse)[k]
         if (!is.na(parentPaths[p])) {
           next
-          }
+        }
         ## set the paths to check if are childs
         paths_to_check <- setdiff(names(which(is.na(parentPaths))),p)
-      
+        
         ## Initialize the minPval vector
         minPval <- setNames(rep(1, length(paths_to_check)), paths_to_check)
-      
+        
         ## Our universe (u2)
         u2 <- paths_to_collapse[[p]]
-      
+        
         ## Do the individual enrichment
         enrich_u2 <- clusterProfiler::enricher(gene = u2, TERM2GENE = pathways_data,
                                                universe = backgGenes_kk,
                                                pvalueCutoff = 0.05, qvalueCutoff = 0.01,
                                                minGSSize = min_length, maxGSSize = max_length)
-      
+        
         enrich_u2 <- enrich_u2@result 
-      
+        
         ## subset the Pvalues
         enrich_u2_pval <- enrich_u2$pvalue
         names(enrich_u2_pval) <- enrich_u2$ID
         enrich_u2_pval <- enrich_u2_pval[names(enrich_u2_pval) %in% paths_to_check]
-      
+        
         ## minPval new
         # common names
         common_minPval <- intersect(names(enrich_u2_pval), names(minPval))
@@ -184,7 +176,7 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
       cat("Collapsed process can be consulted in the 'collapsed_pathways' object")
       cat("\n")
       collapsed_pathways <<- list(mainPaths = names(which(is.na(parentPaths))),
-                                 parent_paths = parentPaths)
+                                  parent_paths = parentPaths)
       pathways_onto_the_analysis <- paths_to_collapse[names(pathways_onto_the_analysis) %in% collapsed_pathways$mainPaths]
     }}
   cat(paste0("Pathway data processing finished","\n"))
@@ -272,17 +264,54 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways,
       }
     }
   }
+  # Finishing the result matrix
   result_matrix <- as.data.frame(result_matrix)
+  cols_ <- colnames(result_matrix)
+  result_matrix$path <- rownames(result_matrix)
   
-  return(result_matrix)
+  result_matrix <- result_matrix %>% 
+    dplyr::relocate(path, .before = all_of(cols_))
+  rownames(result_matrix) <- NULL
+  
+  if (curated_results){
+    cat(paste0("Curating dataset","\n"))
+    cols_ <- colnames(result_matrix)
+    
+    pathways_onto_the_analysis <- pathways[result_matrix$path]
+    
+    pathways_data <- as.data.frame(tibble(
+      path = rep("Not done", times = length(pathways_onto_the_analysis)),
+      genes = rep("Not done", times = length(pathways_onto_the_analysis))))
+    
+    for (i in 1:length(pathways_onto_the_analysis)){
+      pathways_data$path[i] <- names(pathways_onto_the_analysis)[i]
+      pathways_data$Genes_of_Set[i] <- paste0(pathways_onto_the_analysis[[i]], collapse = ";")}
+    
+    pathways_data$N_Genes_of_Set <- 0
+    for (i in 1:length(rownames(pathways_data))){
+      pathways_data$N_Genes_of_Set[i] <- length(unlist(strsplit(pathways_data$Genes_of_Set[i], split = ";"),
+                                                       use.names = F))}
+    pathways_data$Present_Genes <- pathways_data$Genes_of_Set
+    for (i in 1:length(rownames(pathways_data))){
+      pathways_data$Present_Genes[i] <- paste0(intersect(unlist(strsplit(pathways_data$Genes_of_Set[i], split = ";")),rownames(expression_matrix)),
+                                               collapse = ";")}
+    pathways_data$N_Present_Genes <- 0
+    for (i in 1:length(rownames(pathways_data))){
+      pathways_data$N_Present_Genes[i] <- length(unlist(strsplit(pathways_data$Present_Genes[i], split = ";"),
+                                                        use.names = F))}
+    pathways_data$GeneRatio <- 0
+    for (i in 1:length(rownames(pathways_data))){
+      pathways_data$GeneRatio[i] <- pathways_data$N_Present_Genes[i]/pathways_data$N_Genes_of_Set[i]}
+    
+    pathways_data <- pathways_data %>% 
+      subset(select = c(path,Genes_of_Set, Present_Genes,
+                        N_Genes_of_Set, N_Present_Genes,
+                        GeneRatio))
+    
+    result_matrix <- merge(result_matrix, pathways_data, by = "path")
   }
-
-tictoc::tic()
-result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways,  
-                 max_length = 100, min_length = 10, min_Ratio = 0.2, 
-                 organism = "org.Hs.eg.db", use_enrichr = F, 
-                 collapse = F,
-                 alpha = 0.25, scale_size = F, scale_ratio = F)
-tictoc::toc()
-
+  
+  colnames(result_matrix)[1] <- "GeneSet"
+  return(result_matrix)
+}
 
