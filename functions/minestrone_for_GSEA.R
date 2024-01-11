@@ -4,7 +4,7 @@
 
 ## collapsed_list = list of the collapsing process
 
-minestrone_for_GSEA <- function(collapsed_list, original_data){
+minestrone_for_GSEA <- function(collapsed_list, clean.names = F){
   ### make the soup
   soup <- as.data.frame(collapsed_list$parentPathways)
   soup$child <- rownames(soup)
@@ -14,6 +14,7 @@ minestrone_for_GSEA <- function(collapsed_list, original_data){
       soup$parent[i] <- soup$child[i] 
     }
   }
+  if (clean.names){
   # clean parent names
   soup <- soup %>% 
     mutate(parent = gsub("%.*%","",parent)) %>% 
@@ -31,6 +32,6 @@ minestrone_for_GSEA <- function(collapsed_list, original_data){
     mutate(child = gsub("R\\-HSA\\-[0-9]{5,7}\\.[0-9]{1}$","",child)) %>%
     mutate(child = gsub("HALLMARK\\_","",child)) %>% 
     mutate(child = gsub("\\_"," ",child))
-  
+  }
   return(soup)
 }
