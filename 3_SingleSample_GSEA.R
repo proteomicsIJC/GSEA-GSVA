@@ -25,6 +25,7 @@ remove(c2BroadSets)
 remove(gbm_eset)
 remove(brainTxDbSets)
 
+library(org.Hs.eg.db) #### In order that the enrichment works the library has to be loaded onto to environment <3
 tictoc::tic()
 result <- ssGSEA(expression_matrix = expression_matrix, pathways = pathways, recycle = F,
                  max_length = 500, min_length = 30, min_Ratio = 0.66,
