@@ -26,62 +26,62 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
   if (exists("pathways_onto_the_analysis", envir = .GlobalEnv) && recycle){
     cat(paste0("Using existing pathsways_enriched object from the environment","\n"))
     pathways_onto_the_analysis <- get("pathways_onto_the_analysis", envir = .GlobalEnv)
-    } else {
-      cat(paste0("Creating an enriched version of the annotation","\n"))
-      paths_nested <- list()
-      for (i in 1:length(pathways)){
-        ## Extract the genes of the path
-        path_now_genes <- pathways[[i]]
-        ## Calculate the lenght of the path and the ratio of it
-        path_now_ratio <- length(intersect(path_now_genes, rownames(expression_matrix)))/length(path_now_genes)
-        # Do the nested list
-        paths_nested[[i]] <- list(genes = path_now_genes,
-                                  long  = length(intersect(path_now_genes, rownames(expression_matrix))),
-                                  ratio = path_now_ratio)
-        names(paths_nested)[i] <- names(pathways)[i]
-        
-        ## Filter the nested list
-        # Define the function to filter
-        filter_path <- function(enriched_path_list, min_length, max_length, min_ratio){
-          filtered_paths <- lapply(enriched_path_list, function(path) {
-            if (path$long >= min_length && path$long <= max_length &&
-                path$ratio >= min_ratio) {
-              return(path)
-              } else {
-                return(NULL)
-                }
-            })
-          filtered_paths <- filtered_paths[!sapply(filtered_paths, is.null)]
-          return(filtered_paths)
-          }
-        
-        # run the function
-        pathways_enriched <- filter_path(enriched_path_list = paths_nested,
-                                         min_length = min_length, max_length = max_length,
-                                         min_ratio = min_Ratio)
-        pathways_enriched <<- pathways_enriched
-        
-        # once the list is filtered, remove the extra data
-        filter_the_info <- function(enriched_path_list){
-          remove_extra_info <- lapply(enriched_path_list, function(path) {
-            path$long <- NULL  # Remove length
-            path$ratio <- NULL   # Remove ratio
+  } else {
+    cat(paste0("Creating an enriched version of the annotation","\n"))
+    paths_nested <- list()
+    for (i in 1:length(pathways)){
+      ## Extract the genes of the path
+      path_now_genes <- pathways[[i]]
+      ## Calculate the lenght of the path and the ratio of it
+      path_now_ratio <- length(intersect(path_now_genes, rownames(expression_matrix)))/length(path_now_genes)
+      # Do the nested list
+      paths_nested[[i]] <- list(genes = path_now_genes,
+                                long  = length(intersect(path_now_genes, rownames(expression_matrix))),
+                                ratio = path_now_ratio)
+      names(paths_nested)[i] <- names(pathways)[i]
+      
+      ## Filter the nested list
+      # Define the function to filter
+      filter_path <- function(enriched_path_list, min_length, max_length, min_ratio){
+        filtered_paths <- lapply(enriched_path_list, function(path) {
+          if (path$long >= min_length && path$long <= max_length &&
+              path$ratio >= min_ratio) {
             return(path)
-            })
-          return(remove_extra_info)
+          } else {
+            return(NULL)
           }
-        pathways_removed <- filter_the_info(enriched_path_list = pathways_enriched)
-        cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")
-        }
-      cat(paste0("Enriched path annotation can be consulted in the 'pathway_enriched' object","\n"))
-      pathways_onto_the_analysis <- list()
-      cat("\n")
-      cat("Filtering pathways by length and ratio", "\n")
-      cat("\n")
-      for (j in 1:length(pathways_removed)){
-        pathways_onto_the_analysis[[j]] <- unlist(pathways_removed[[j]], use.names = F)
-        names(pathways_onto_the_analysis)[j] <- names(pathways_removed)[j]}
-      pathways_onto_the_analysis <<- pathways_onto_the_analysis}
+        })
+        filtered_paths <- filtered_paths[!sapply(filtered_paths, is.null)]
+        return(filtered_paths)
+      }
+      
+      # run the function
+      pathways_enriched <- filter_path(enriched_path_list = paths_nested,
+                                       min_length = min_length, max_length = max_length,
+                                       min_ratio = min_Ratio)
+      pathways_enriched <<- pathways_enriched
+      
+      # once the list is filtered, remove the extra data
+      filter_the_info <- function(enriched_path_list){
+        remove_extra_info <- lapply(enriched_path_list, function(path) {
+          path$long <- NULL  # Remove length
+          path$ratio <- NULL   # Remove ratio
+          return(path)
+        })
+        return(remove_extra_info)
+      }
+      pathways_removed <- filter_the_info(enriched_path_list = pathways_enriched)
+      cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")
+    }
+    cat(paste0("Enriched path annotation can be consulted in the 'pathway_enriched' object","\n"))
+    pathways_onto_the_analysis <- list()
+    cat("\n")
+    cat("Filtering pathways by length and ratio", "\n")
+    cat("\n")
+    for (j in 1:length(pathways_removed)){
+      pathways_onto_the_analysis[[j]] <- unlist(pathways_removed[[j]], use.names = F)
+      names(pathways_onto_the_analysis)[j] <- names(pathways_removed)[j]}
+    pathways_onto_the_analysis <<- pathways_onto_the_analysis}
   
   if ((use_enrichr)){
     cat(paste0("Functional annotation of the data","\n"))
@@ -178,7 +178,7 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
       cat("\n")
       collapsed_pathways <<- list(mainPathways = names(which(is.na(parentPaths))),
                                   parentPathways = parentPaths)
-      pathways_onto_the_analysis <- pathways_onto_the_analysis[names(pathways_onto_the_analysis) %in% collapsed_pathways$mainPaths]
+      pathways_onto_the_analysis <- pathways_onto_the_analysis[collapsed_pathways$mainPathways]
     }}
   cat(paste0("Pathway data processing finished","\n"))
   cat("\n")
@@ -212,8 +212,8 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
     names(ranked_genes) <- sample_now$genes
     ### for each set (pathways_onto_the_analysis) calculate the enrichment
     for (set in 1:length(pathways_onto_the_analysis)){
-      set_now_name <<- names(pathways_onto_the_analysis)[set]
-      set_now_genes <<- pathways_onto_the_analysis[[set]]
+      set_now_name <- names(pathways_onto_the_analysis)[set]
+      set_now_genes <- pathways_onto_the_analysis[[set]]
       
       ## indicator pos and negative
       # indicator pos: indicator that means that the gene is in the gene set and it will go to the positive part of the formula
@@ -315,4 +315,3 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
   colnames(result_matrix)[1] <- "GeneSet"
   return(result_matrix)
 }
-
