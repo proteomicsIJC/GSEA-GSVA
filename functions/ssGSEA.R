@@ -40,6 +40,8 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
                                   long  = length(intersect(path_now_genes, rownames(expression_matrix))),
                                   ratio = path_now_ratio)
         names(paths_nested)[i] <- names(pathways)[i]
+        cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")}
+      
         
         ## Filter the nested list
         # Define the function to filter
@@ -72,8 +74,6 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
           return(remove_extra_info)
           }
         pathways_removed <- filter_the_info(enriched_path_list = pathways_enriched)
-        cat(paste0("Enriched path: ",i,"/",length(pathways)),"\r")
-        }
       cat(paste0("Enriched path annotation can be consulted in the 'pathway_enriched' object","\n"))
       pathways_onto_the_analysis <- list()
       cat("\n")
@@ -219,8 +219,8 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
       ## indicator pos and negative
       # indicator pos: indicator that means that the gene is in the gene set and it will go to the positive part of the formula
       # indicator neg: indicator that means that the gene is not in the gene set and it will go to the negative part of the formula
-      indicator_pos <<- names(ranked_genes) %in% set_now_genes 
-      indicator_neg <<- !indicator_pos
+      indicator_pos <- names(ranked_genes) %in% set_now_genes 
+      indicator_neg <- !indicator_pos
       
       ## positive part of the formula
       rank_alpha <- (ranked_genes*indicator_pos)^alpha
