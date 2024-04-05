@@ -39,6 +39,7 @@ tictoc::toc()
 
 ### Save the enriched path list
 saveRDS(pathways_enriched, file = "./results/path_list_max100_min10_0ratio.rds")
+remove(pathways_onto_the_analysis)
 
 ### Load enriched path list
 pathways_onto_the_analysis <- readRDS("./results/path_list_max100_min10_0ratio.rds")
