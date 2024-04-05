@@ -109,7 +109,8 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
     cat(paste0("Functional annotation result can be consulted in the 'cluster_prof_table' note that only significantly enriched are annotated","\n"))
     cluster_prof_table <- cluster_prof@result
     cluster_prof_table <- cluster_prof_table %>% 
-      filter(p.adjust <= 0.05)
+      filter(p.adjust <= 0.05) %>% 
+      filter(Count >= min_length)
     cluster_prof_table <<- cluster_prof_table
     pathways_onto_the_analysis <- pathways_onto_the_analysis[names(pathways_onto_the_analysis) %in% cluster_prof_table$ID]
     
