@@ -10,6 +10,8 @@
 ## min_Ratio = the minimum ratio of a path to be considered
 ## use_enrichr = functionaly enrich the paths present in the dataset
 ## organism = in case use use_enrichr is TRUE, the organims
+## personalized_bg = TRUE or false if you will provide any kind of you will or will not provide background for the enrichment
+## background = a vector of gene symbols that will serve as background for the enrichment analysis
 ## collapse = collapse enriched paths only if the collapsing if use_enrichr is TRUE
 ## alpha = exponent of the positive ranking genes
 ## scale_size = normalize by GeneSet size
@@ -19,7 +21,7 @@
 
 ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, recycle = F,
                    max_length = 250, min_length = 10, min_Ratio = 0,
-                   use_enrichr = F, organism = "org.Hs.eg.db",
+                   use_enrichr = F, organism = "org.Hs.eg.db", personalized_bg = F, background = "",
                    collapse = F, max_pvalue_collapse = 0.05,
                    alpha = 0.25, scale_size = F, scale_ratio = F, curated_results = F){
   ### GENSET WORK
@@ -97,7 +99,12 @@ ssGSEA <- function(expression_matrix = expression_matrix, pathways = pathways, r
     backgGenes <- AnnotationDbi::select(get(organism), keys = backgGenes, columns = "UNIPROT") # Converts entrezID to GeneSymbol
     backgGenes <- backgGenes$UNIPROT
     backgGenes_kk <- AnnotationDbi::select(get(organism), keys = backgGenes, columns = "SYMBOL", keytype = "UNIPROT") # Converts entrezID to Symbols
+    backgGenes_kk <- backgGenes_kk %>% 
+      filter(!duplicated(SYMBOL))
     backgGenes_kk <- backgGenes_kk$SYMBOL
+    if ((personalized_bg)){
+      backgGenes_kk <- backgGenes_kk[backgGenes_kk %in% background]
+    }
     
     # Execute cluster profiler
     cluster_prof <- clusterProfiler::enricher(gene = c(rownames(expression_matrix)), TERM2GENE = pathways_data,
